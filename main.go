@@ -1,38 +1,47 @@
 package main
 
 import (
-	"fmt"
+	"bufio"
+	"os"
+	"strconv"
+
+	"koodWordle/game"
+	"koodWordle/io"
+	"koodWordle/model"
 )
 
 func main() {
-	fmt.Println("Welcome to the Cypher tool!")
-
-	toEncrypt, encoding, message := getInput()
-
-	var result string
-
-	switch encoding {
-
-	case "rot13":
-		if toEncrypt {
-			result = encrypt_rot13(message)
-		} else {
-			result = decrypt_rot13(message)
-		}
-	case "reverse":
-		if toEncrypt {
-			result = encrypt_reverse(message)
-		} else {
-			result = decrypt_reverse(message)
-		}
-	case "caesar":
-		if toEncrypt {
-			result = encrypt_caesar(message)
-		} else {
-			result = decrypt_caesar(message)
-		}
+	if len(os.Args) != 2 {
+		return
 	}
 
-	fmt.Println("\n Result:")
-	fmt.Println(result)
+	index, err := strconv.Atoi(os.Args[1])
+	if err != nil {
+		return
+	}
+
+	words := io.LoadWords("wordle-words.txt")
+	if len(words) == 0 || index < 0 || index >= len(words) {
+		return
+	}
+
+	secret := words[index]
+	scanner := bufio.NewScanner(os.Stdin)
+
+	username := io.ReadUsername(scanner)
+	if username == "" {
+		return
+	}
+
+	user := model.NewUser(username)
+
+	attempts, won := game.Play(scanner, secret)
+
+	io.WriteStats(user.Username, secret, attempts, won)
+
+	if io.AskShowStats(scanner) {
+		io.ShowStats(user.Username)
+	}
+
+	io.WaitForExit(scanner)
 }
